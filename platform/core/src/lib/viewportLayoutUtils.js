@@ -1,4 +1,5 @@
 /**
+ * DICOM Representation of Viewports
  * For the "Display Environment Spatial Position" (0072,0108) Attribute,
  * the lower left corner of the overall bounding box has Cartesian coordinates
  * of (0.0,0.0).
@@ -16,18 +17,33 @@
  * Constants
  */
 
-const EPSILON = 0.000001;
+const PRECISION = 6;
+const EPSILON = Math.pow(10, -PRECISION) / 2;
 const SEPARATOR = '/';
-const IS_VALID_OFFSET_LIST = Symbol('isValidOffsetList');
+const IS_VALID_LAYOUT = Symbol('isValidLayout');
 
 /**
  * Private Methods & Utils
  */
 
-function unsafeGetGridLayout(rows, cols) {
+function getId(offsetList) {
+  return Array.prototype.map.call(offsetList, fmt).join(SEPARATOR);
+}
+
+function unsafeGetViewportOffsetList(layout, index) {
+  const { offsetList } = layout;
+  const start = index * 4;
+  const end = start + 4;
+  if (end <= offsetList.length) {
+    return Object.freeze(Array.prototype.slice.call(offsetList, start, end));
+  }
+  return null;
+}
+
+function unsafeGetStandardGridLayout(rows, cols) {
   const offsetList = [];
-  const col2offset = (width => (col => col * width))(1 / cols);
-  const row2offset = (height => (row => 1 - row * height))(1 / rows);
+  const col2offset = (width => col => width * col)(1 / cols);
+  const row2offset = (height => row => height * (rows - row))(1 / rows);
   for (let row = 0; row < rows; ++row) {
     const y1 = row2offset(row);
     const y2 = row2offset(row + 1);
@@ -41,7 +57,9 @@ function unsafeGetGridLayout(rows, cols) {
 }
 
 function fmt(n) {
-  return Number(n).toFixed(6).replace(/\.?0+$/, '');
+  return Number(n)
+    .toFixed(PRECISION)
+    .replace(/\.?0+$/, '');
 }
 
 function eq(a, b) {
@@ -53,10 +71,21 @@ function trunc(n) {
   return n < 0 ? Math.ceil(n) : Math.floor(n);
 }
 
-
-function viewport(x1, y1, x2, y2) {
-  return [x1, y1, x2, y2].map(fmt).join(SEPARATOR);
+function isNonEmptyArray(subject) {
+  return Array.isArray(subject) && subject.length > 0;
 }
+
+function isValidIndex(subject) {
+  return subject === trunc(subject) && subject >= 0;
+}
+
+function isValidQtd(subject) {
+  return subject === trunc(subject) && subject > 0;
+}
+
+/**
+ * Public Methods
+ */
 
 /**
  * Check if a given value is a valid offset
@@ -78,10 +107,25 @@ function isValidOffsetList(subject) {
     return (
       length > 0 &&
       length % 4 === 0 &&
-      subject.every(isOffset)
+      Array.prototype.every.call(subject, isOffset)
     );
   }
   return false;
+}
+
+/**
+ * Compares two offsets lists
+ * @param {Array} a First list of offsets
+ * @param {Array} b Second list of offsets
+ */
+function offsetListEquals(a, b) {
+  return (
+    isValidOffsetList(a) &&
+    (b === a ||
+      (isValidOffsetList(b) &&
+        a.length === b.length &&
+        Array.prototype.every.call(a, (n, i) => eq(n, b[i]))))
+  );
 }
 
 /**
@@ -92,7 +136,7 @@ function isValidOffsetList(subject) {
  */
 function ensureLayout(subject, skip) {
   if (subject !== null && typeof subject === 'object') {
-    if (subject[IS_VALID_OFFSET_LIST]) {
+    if (subject[IS_VALID_LAYOUT]) {
       return subject;
     }
     if (!skip) {
@@ -104,29 +148,144 @@ function ensureLayout(subject, skip) {
 
 /**
  * Creates an immutable layout object
- * @param {Array} offsetList An array of offsets
+ * @param {Array} givenOffsetList An array of offsets
  * @returns {Object} An immutable layout object or null if an invalid list
  *  of offsets was provided
  */
-
-function createLayout(offsetList) {
-  if (isValidOffsetList(offsetList)) {
+function createLayout(givenOffsetList) {
+  if (isValidOffsetList(givenOffsetList)) {
+    const offsetList = Object.freeze(
+      Array.prototype.slice.call(givenOffsetList)
+    );
+    const id = getId(offsetList);
     return Object.freeze({
-      offsetList: Object.freeze(offsetList.slice()),
-      [IS_VALID_OFFSET_LIST]: true
+      id,
+      offsetList,
+      [IS_VALID_LAYOUT]: true,
     });
   }
   return null;
 }
 
-function getViewport(givenLayout, index) {
+/**
+ * Calculate the number of viewports from a given layout object
+ * @param {Object} givenLayout The source layout object
+ * @returns {number} The number of viewports in the given layout or zero
+ */
+function getViewportCount(givenLayout) {
   const layout = ensureLayout(givenLayout, true);
   if (layout) {
+    // divide by 4 and return an integer
+    return layout.offsetList.length >>> 2;
+  }
+  return 0;
+}
+
+/**
+ * Check if a viewport exists in a given layout object
+ * @param {Object} givenLayout The source layout object
+ * @param {number} index The index of the viewport being tested
+ * @returns {boolean}
+ */
+function hasViewport(givenLayout, index) {
+  return index < getViewportCount(givenLayout);
+}
+
+/**
+ * Get the offset list of a given viewport contained inside the given layout
+ * object
+ * @param {Object} givenLayout The source layout object
+ * @param {number} index The index of the requested viewport
+ * @returns {Array} The 4-tuple with the offsets that compose the viewport
+ */
+function getViewportOffsetList(givenLayout, index) {
+  if (isValidIndex(index)) {
+    const layout = ensureLayout(givenLayout, true);
+    if (layout) {
+      return unsafeGetViewportOffsetList(layout, index);
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract a viewport object from a layout object by index. Please note that
+ * the viewport object itself is a layout object with a single viewport
+ * @param {Object} givenLayout The source layout object from which the viewport
+ *  object is to be extracted
+ * @param {number} index The index of the requested viewport
+ * @returns {Object} A layout object representing the requested viewport
+ */
+function getViewport(givenLayout, index) {
+  const offsetList = getViewportOffsetList(givenLayout, index);
+  if (offsetList) {
+    return createLayout(offsetList);
+  }
+  return null;
+}
+
+/**
+ * Build a new (sub-)layout object based on a list of viewport indexes contained
+ * within the source layout object
+ * @param {Object} givenLayout The source layout object which contains the
+ *  requested viewports
+ * @param {Array} indexList A list of viewport indexes that will be part of the
+ *  returned layout object (the viewport group)
+ * @returns {Object} The new layout object containing the specified viewports
+ */
+function createVewportGroup(givenLayout, indexList) {
+  const layout = ensureLayout(givenLayout, true);
+  if (layout && isNonEmptyArray(indexList)) {
+    const offsetList = [];
+    const callback = index => {
+      if (isValidIndex(index)) {
+        const viewportOffsetList = unsafeGetViewportOffsetList(layout, index);
+        if (viewportOffsetList) {
+          Array.prototype.push.apply(offsetList, viewportOffsetList);
+          return true;
+        }
+      }
+      return false;
+    };
+    if (Array.prototype.every.call(indexList, callback)) {
+      return createLayout(offsetList);
+    }
+  }
+  return null;
+}
+
+/**
+ * Calculate the number of rows and columns the source layout has. This method
+ * returns null if the given layout is not a regular grid layout.
+ * @param {Object} layout The source layout object
+ * @returns {Array} A 2-tuple representing the number of rows and columns
+ *  in that order
+ */
+function getRowsAndColumns(layout) {
+  const viewportCount = getViewportCount(layout);
+  if (viewportCount > 0) {
     const { offsetList } = layout;
-    const start = index * 4;
-    const end = start + 4;
-    if (end <= offsetList.length) {
-      return createLayout(offsetList.slice(start, end));
+    const ulx = new Set();
+    const uly = new Set();
+    const lrx = new Set();
+    const lry = new Set();
+    for (let i = 0; i < viewportCount; ++i) {
+      const base = i * 4;
+      // x1, y1, x2, y2
+      ulx.add(offsetList[base]);
+      uly.add(offsetList[base + 1]);
+      lrx.add(offsetList[base + 2]);
+      lry.add(offsetList[base + 3]);
+    }
+    const rows = uly.size;
+    const cols = ulx.size;
+    if (
+      cols === lrx.size &&
+      rows === lry.size &&
+      cols * rows === viewportCount
+    ) {
+      // is a regular grid layout
+      return [rows, cols];
     }
   }
   return null;
@@ -136,9 +295,9 @@ function getViewport(givenLayout, index) {
  * Interface
  */
 
-function getGridLayout(rows, cols) {
-  if (rows > 0 && cols > 0 && rows === trunc(rows) && cols === trunc(cols)) {
-    return unsafeGetGridLayout(rows, cols);
+function getStandardGridLayout(rows, cols) {
+  if (isValidQtd(rows) && isValidQtd(cols)) {
+    return unsafeGetStandardGridLayout(rows, cols);
   }
   return null;
 }
@@ -150,8 +309,14 @@ function getGridLayout(rows, cols) {
 export {
   isOffset,
   isValidOffsetList,
+  offsetListEquals,
   createLayout,
   ensureLayout,
-  getGridLayout,
-  getViewport
-}
+  getStandardGridLayout,
+  getViewportOffsetList,
+  getViewport,
+  getViewportCount,
+  hasViewport,
+  createVewportGroup,
+  getRowsAndColumns,
+};

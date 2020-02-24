@@ -19,7 +19,9 @@ const StudyListRouting = asyncComponent(() =>
   )
 );
 const StandaloneRouting = asyncComponent(() =>
-  import(/* webpackChunkName: "ConnectedStandaloneRouting" */ '../connectedComponents/ConnectedStandaloneRouting.js')
+  import(
+    /* webpackChunkName: "ConnectedStandaloneRouting" */ '../connectedComponents/ConnectedStandaloneRouting.js'
+  )
 );
 const ViewerLocalFileData = asyncComponent(() =>
   import(
@@ -40,7 +42,7 @@ const ROUTES_DEF = {
       options: {
         viewports: {
           item: ['0/1/0.5/0.5', '0.5/1/1/0.5', '0/0.5/0.5/0', '0.5/0.5/1/0'],
-          groups: [[0, 2], [1, 3]]
+          groups: [[0, 2], [1, 3]],
         },
       },
       component: ViewerRouting,
