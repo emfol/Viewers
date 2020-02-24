@@ -35,6 +35,16 @@ const ROUTES_DEF = {
       path: '/viewer/:studyInstanceUids',
       component: ViewerRouting,
     },
+    longitudinalViewer: {
+      path: '/longitudinal-viewer/:studyInstanceUids',
+      options: {
+        viewports: {
+          item: ['0/1/0.5/0.5', '0.5/1/1/0.5', '0/0.5/0.5/0', '0.5/0.5/1/0'],
+          groups: [[0, 2], [1, 3]]
+        },
+      },
+      component: ViewerRouting,
+    },
     standaloneViewer: {
       path: '/viewer',
       component: StandaloneRouting,
@@ -96,6 +106,7 @@ const getRoutes = appConfig => {
       if (validRoute) {
         routes.push({
           path: route.path,
+          options: route.options,
           Component: route.component,
         });
       }

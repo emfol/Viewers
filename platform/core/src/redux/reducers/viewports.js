@@ -37,10 +37,12 @@ const findActiveViewportSpecificData = (
 ) => {
   const numberOfViewports = numRows * numColumns;
   const viewportSpecificData = cloneDeep(currentViewportSpecificData);
+  const viewportSpecificDataKeys = Object.keys(viewportSpecificData);
 
-  if (numberOfViewports < Object.keys(viewportSpecificData).length) {
-    Object.keys(viewportSpecificData).forEach(key => {
-      if (key > numberOfViewports - 1) {
+  if (numberOfViewports < viewportSpecificDataKeys.length) {
+    const lastViewportIndex = numberOfViewports - 1;
+    viewportSpecificDataKeys.forEach(key => {
+      if (key > lastViewportIndex) {
         delete viewportSpecificData[key];
       }
     });
@@ -84,6 +86,7 @@ const getActiveViewportIndex = (
  * @param {ViewportAction} action A viewport action.
  */
 const viewports = (state = DEFAULT_STATE, action) => {
+  console.log('Oops!', state, action);
   let useActiveViewport = false;
 
   switch (action.type) {

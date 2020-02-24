@@ -172,6 +172,7 @@ const _loadRemainingSeries = studyMetadata => {
 
 function ViewerRetrieveStudyData({
   server,
+  options,
   studyInstanceUids,
   seriesInstanceUids,
   clearViewportSpecificData,
@@ -348,6 +349,7 @@ function ViewerRetrieveStudyData({
       studies={studies}
       isStudyLoaded={isStudyLoaded}
       studyInstanceUids={studyInstanceUids}
+      options={options}
     />
   );
 }
