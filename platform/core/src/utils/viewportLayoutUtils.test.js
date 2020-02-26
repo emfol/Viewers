@@ -421,4 +421,62 @@ describe('viewporLayoutUtils', function() {
         );
     });
   });
+
+  describe('getViewportCount should return the correct number of viewports', function() {
+    test('standard MPR layout', function() {
+      expect(
+        viewportLayoutUtils.getViewportCount(
+          viewportLayoutUtils.createLayout([
+            0,
+            1,
+            1 / 2,
+            0,
+            1 / 2,
+            1,
+            1,
+            1 / 2,
+            1 / 2,
+            1 / 2,
+            1,
+            0,
+          ])
+        )
+      ).toBe(3);
+    });
+    test('1x1', function() {
+      expect(
+        viewportLayoutUtils.getViewportCount(
+          viewportLayoutUtils.getStandardGridLayout(1, 1)
+        )
+      ).toBe(1);
+    });
+    test('1x2', function() {
+      expect(
+        viewportLayoutUtils.getViewportCount(
+          viewportLayoutUtils.getStandardGridLayout(1, 2)
+        )
+      ).toBe(2);
+    });
+    test('1x3', function() {
+      expect(
+        viewportLayoutUtils.getViewportCount(
+          viewportLayoutUtils.getStandardGridLayout(1, 3)
+        )
+      ).toBe(3);
+    });
+    test('2x3', function() {
+      expect(
+        viewportLayoutUtils.getViewportCount(
+          viewportLayoutUtils.getStandardGridLayout(2, 3)
+        )
+      ).toBe(6);
+    });
+    test('3x3', function() {
+      expect(
+        viewportLayoutUtils.getViewportCount(
+          viewportLayoutUtils.getStandardGridLayout(3, 3)
+        )
+      ).toBe(9);
+    });
+  });
 });

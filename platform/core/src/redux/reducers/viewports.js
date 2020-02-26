@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash.clonedeep';
 import merge from 'lodash.merge';
 
+import * as viewportLayoutUtils from '../../utils/viewportLayoutUtils';
 import {
   CLEAR_VIEWPORT,
   SET_ACTIVE_SPECIFIC_DATA,
@@ -12,12 +13,11 @@ import {
 } from './../constants/ActionTypes.js';
 
 export const DEFAULT_STATE = {
+  initialized: false,
   numRows: 1,
   numColumns: 1,
   activeViewportIndex: 0,
-  layout: {
-    viewports: [{}],
-  },
+  layout: createLayout(viewportLayoutUtils.getStandardGridLayout(1, 1)),
   viewportSpecificData: {},
 };
 
@@ -86,7 +86,6 @@ const getActiveViewportIndex = (
  * @param {ViewportAction} action A viewport action.
  */
 const viewports = (state = DEFAULT_STATE, action) => {
-  console.log('Oops!', state, action);
   let useActiveViewport = false;
 
   switch (action.type) {
@@ -237,5 +236,83 @@ const viewports = (state = DEFAULT_STATE, action) => {
     }
   }
 };
+
+/**
+ * Utils
+ */
+
+function createState() {
+  return {
+    initialized: false,
+    numRows: 1,
+    numColumns: 1,
+    activeViewportIndex: 0,
+    layout: createLayout(viewportLayoutUtils.getStandardGridLayout(1, 1)),
+    viewportSpecificData: {},
+  };
+}
+
+function createLayout(struct, groups, viewports) {
+  return Object.freeze({
+    viewports: createViewports(struct, getAttributesSource(viewports)),
+    groups: createGroups(struct, groups),
+    struct,
+  });
+}
+
+function createViewports(struct, attributesSource) {
+  const viewportCount = viewportLayoutUtils.getViewportCount(struct);
+  if (viewportCount > 0) {
+    const viewportList = new Array(viewportCount);
+    for (let i = 0; i < viewportCount; ++i) {
+      viewportList[i] = createViewport(
+        viewportLayoutUtils.getViewport(struct, i),
+        attributesSource(i)
+      );
+    }
+    return Object.freeze(viewportList);
+  }
+  return null;
+}
+
+function createViewport(struct, attributes) {
+  return Object.freeze({
+    ...attributes,
+    struct,
+  });
+}
+
+function createGroups(struct, groups) {
+  if (Array.isArray(groups) && groups.length > 0) {
+    const { length } = groups;
+    const viewportGroups = new Array(length);
+    let i = 0;
+    for (; i < length; ++i) {
+      const group = viewportLayoutUtils.createVewportGroup(struct, groups[i]);
+      if (!group) {
+        break;
+      }
+      viewportGroups[i] = createLayout(group);
+    }
+    if (i === length) {
+      return viewportGroups;
+    }
+  }
+  return null;
+}
+
+function getAttributesSource(attributesList) {
+  const isValidList = Array.isArray(attributesList);
+  return function attributesSource(index) {
+    // prevent deopts from out of bounds access
+    if (isValidList && index < attributesList.length) {
+      return attributesList[index];
+    }
+  };
+}
+
+/**
+ * Exports
+ */
 
 export default viewports;

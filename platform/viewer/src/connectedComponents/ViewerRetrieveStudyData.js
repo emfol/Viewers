@@ -7,12 +7,12 @@ import PropTypes from 'prop-types';
 import { extensionManager } from './../App.js';
 import { useSnackbarContext } from '@ohif/ui';
 
+// Contexts
+import AppContext from '../context/AppContext';
+
 const { OHIFStudyMetadata, OHIFSeriesMetadata } = metadata;
 const { retrieveStudiesMetadata, deleteStudyMetadataPromise } = studies;
 const { studyMetadataManager, updateMetaDataManager, makeCancelable } = utils;
-
-// Contexts
-import AppContext from '../context/AppContext';
 
 const _promoteToFront = (list, value, searchMethod) => {
   let response = [...list];
@@ -105,7 +105,7 @@ const _showUserMessage = (queryParamApplied, message, dialog = {}) => {
     return;
   }
 
-  const { show: showUserMessage = () => { } } = dialog;
+  const { show: showUserMessage = () => {} } = dialog;
   showUserMessage({
     message,
   });
@@ -172,7 +172,6 @@ const _loadRemainingSeries = studyMetadata => {
 
 function ViewerRetrieveStudyData({
   server,
-  options,
   studyInstanceUids,
   seriesInstanceUids,
   clearViewportSpecificData,
@@ -322,12 +321,15 @@ function ViewerRetrieveStudyData({
   const prevStudyInstanceUids = usePrevious(studyInstanceUids);
 
   useEffect(() => {
-    const hasStudyInstanceUidsChanged = !(prevStudyInstanceUids && prevStudyInstanceUids.every(e => studyInstanceUids.includes(e)));
-
+    const hasStudyInstanceUidsChanged = !(
+      prevStudyInstanceUids &&
+      prevStudyInstanceUids.every(e => studyInstanceUids.includes(e))
+    );
     if (hasStudyInstanceUidsChanged) {
       studyMetadataManager.purge();
       purgeCancellablePromises();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studyInstanceUids]);
 
   useEffect(() => {
@@ -349,7 +351,6 @@ function ViewerRetrieveStudyData({
       studies={studies}
       isStudyLoaded={isStudyLoaded}
       studyInstanceUids={studyInstanceUids}
-      options={options}
     />
   );
 }

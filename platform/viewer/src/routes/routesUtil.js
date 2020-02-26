@@ -1,7 +1,10 @@
 import asyncComponent from '../components/AsyncComponent.js';
 
 import OHIF from '@ohif/core';
-const { urlUtil: UrlUtil } = OHIF.utils;
+const {
+  urlUtil: UrlUtil,
+  viewportLayoutUtils: ViewportLayoutUtils,
+} = OHIF.utils;
 
 // Dynamic Import Routes (CodeSplitting)
 const IHEInvokeImageDisplay = asyncComponent(() =>
@@ -41,7 +44,7 @@ const ROUTES_DEF = {
       path: '/longitudinal-viewer/:studyInstanceUids',
       options: {
         viewports: {
-          item: ['0/1/0.5/0.5', '0.5/1/1/0.5', '0/0.5/0.5/0', '0.5/0.5/1/0'],
+          layout: ViewportLayoutUtils.getStandardGridLayout(2, 2),
           groups: [[0, 2], [1, 3]],
         },
       },

@@ -26,8 +26,8 @@ const IS_VALID_LAYOUT = Symbol('isValidLayout');
  * Private Methods & Utils
  */
 
-function getId(offsetList) {
-  return Array.prototype.map.call(offsetList, fmt).join(SEPARATOR);
+function unsafeGetId(offsetList) {
+  return offsetList.map(fmt).join(SEPARATOR);
 }
 
 function unsafeGetViewportOffsetList(layout, index) {
@@ -35,7 +35,7 @@ function unsafeGetViewportOffsetList(layout, index) {
   const start = index * 4;
   const end = start + 4;
   if (end <= offsetList.length) {
-    return Object.freeze(Array.prototype.slice.call(offsetList, start, end));
+    return Object.freeze(offsetList.slice(start, end));
   }
   return null;
 }
@@ -69,10 +69,6 @@ function eq(a, b) {
 
 function trunc(n) {
   return n < 0 ? Math.ceil(n) : Math.floor(n);
-}
-
-function isNonEmptyArray(subject) {
-  return Array.isArray(subject) && subject.length > 0;
 }
 
 function isValidIndex(subject) {
@@ -157,10 +153,9 @@ function createLayout(givenOffsetList) {
     const offsetList = Object.freeze(
       Array.prototype.slice.call(givenOffsetList)
     );
-    const id = getId(offsetList);
     return Object.freeze({
-      id,
       offsetList,
+      id: unsafeGetId(offsetList),
       [IS_VALID_LAYOUT]: true,
     });
   }
@@ -175,8 +170,7 @@ function createLayout(givenOffsetList) {
 function getViewportCount(givenLayout) {
   const layout = ensureLayout(givenLayout, true);
   if (layout) {
-    // divide by 4 and return an integer
-    return layout.offsetList.length >>> 2;
+    return layout.offsetList.length / 4;
   }
   return 0;
 }
@@ -199,11 +193,9 @@ function hasViewport(givenLayout, index) {
  * @returns {Array} The 4-tuple with the offsets that compose the viewport
  */
 function getViewportOffsetList(givenLayout, index) {
-  if (isValidIndex(index)) {
-    const layout = ensureLayout(givenLayout, true);
-    if (layout) {
-      return unsafeGetViewportOffsetList(layout, index);
-    }
+  const layout = ensureLayout(givenLayout, true);
+  if (layout && isValidIndex(index)) {
+    return unsafeGetViewportOffsetList(layout, index);
   }
   return null;
 }
@@ -235,19 +227,23 @@ function getViewport(givenLayout, index) {
  */
 function createVewportGroup(givenLayout, indexList) {
   const layout = ensureLayout(givenLayout, true);
-  if (layout && isNonEmptyArray(indexList)) {
+  if (layout && Array.isArray(indexList) && indexList.length > 0) {
     const offsetList = [];
-    const callback = index => {
+    const { length } = indexList;
+    let i = 0;
+    for (; i < length; ++i) {
+      const index = indexList[i];
       if (isValidIndex(index)) {
         const viewportOffsetList = unsafeGetViewportOffsetList(layout, index);
         if (viewportOffsetList) {
-          Array.prototype.push.apply(offsetList, viewportOffsetList);
-          return true;
+          offsetList.push.apply(offsetList, viewportOffsetList);
+          continue;
         }
       }
-      return false;
-    };
-    if (Array.prototype.every.call(indexList, callback)) {
+      break;
+    }
+    if (i === length) {
+      // all groups successfully created
       return createLayout(offsetList);
     }
   }
