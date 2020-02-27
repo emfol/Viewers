@@ -11,6 +11,8 @@
  * coordinates relative to the (0,0) and (1,1) range of the overall box.
  * Position of a box is given by a (x1,y1), (x2,y2) pair that identifies the
  * UPPER LEFT CORNER and LOWER RIGHT CORNER if the box is rectangular.
+ * For more information, please visit:
+ * http://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.23.2.html#sect_C.23.2.1.1
  */
 
 /**
@@ -25,6 +27,13 @@ const IS_VALID_LAYOUT = Symbol('isValidLayout');
 /**
  * Private Methods & Utils
  */
+
+function signOff(subject) {
+  // create a hidden non-enumerable property
+  return Object.freeze(
+    Object.defineProperty(subject, IS_VALID_LAYOUT, { value: true })
+  );
+}
 
 function unsafeGetId(offsetList) {
   return offsetList.map(fmt).join(SEPARATOR);
@@ -125,21 +134,16 @@ function offsetListEquals(a, b) {
 }
 
 /**
- * Ensure the given object is a valid layout object
+ * Check if the provided object is a valid layout object
  * @param {any} subject The object to be tested
- * @param {boolean} skip Boolean indicating if the creation of a valid layout
- *  object should be attempted;
+ * @returns {boolean}
  */
-function ensureLayout(subject, skip) {
-  if (subject !== null && typeof subject === 'object') {
-    if (subject[IS_VALID_LAYOUT]) {
-      return subject;
-    }
-    if (!skip) {
-      return createLayout(subject.offsetList);
-    }
-  }
-  return null;
+function isValidLayout(subject) {
+  return (
+    subject !== null &&
+    typeof subject === 'object' &&
+    subject[IS_VALID_LAYOUT] === true
+  );
 }
 
 /**
@@ -153,10 +157,9 @@ function createLayout(givenOffsetList) {
     const offsetList = Object.freeze(
       Array.prototype.slice.call(givenOffsetList)
     );
-    return Object.freeze({
+    return signOff({
       offsetList,
       id: unsafeGetId(offsetList),
-      [IS_VALID_LAYOUT]: true,
     });
   }
   return null;
@@ -164,12 +167,11 @@ function createLayout(givenOffsetList) {
 
 /**
  * Calculate the number of viewports from a given layout object
- * @param {Object} givenLayout The source layout object
+ * @param {Object} layout The source layout object
  * @returns {number} The number of viewports in the given layout or zero
  */
-function getViewportCount(givenLayout) {
-  const layout = ensureLayout(givenLayout, true);
-  if (layout) {
+function getViewportCount(layout) {
+  if (isValidLayout(layout)) {
     return layout.offsetList.length / 4;
   }
   return 0;
@@ -188,13 +190,12 @@ function hasViewport(givenLayout, index) {
 /**
  * Get the offset list of a given viewport contained inside the given layout
  * object
- * @param {Object} givenLayout The source layout object
+ * @param {Object} layout The source layout object
  * @param {number} index The index of the requested viewport
  * @returns {Array} The 4-tuple with the offsets that compose the viewport
  */
-function getViewportOffsetList(givenLayout, index) {
-  const layout = ensureLayout(givenLayout, true);
-  if (layout && isValidIndex(index)) {
+function getViewportOffsetList(layout, index) {
+  if (isValidLayout(layout) && isValidIndex(index)) {
     return unsafeGetViewportOffsetList(layout, index);
   }
   return null;
@@ -203,13 +204,13 @@ function getViewportOffsetList(givenLayout, index) {
 /**
  * Extract a viewport object from a layout object by index. Please note that
  * the viewport object itself is a layout object with a single viewport
- * @param {Object} givenLayout The source layout object from which the viewport
+ * @param {Object} layout The source layout object from which the viewport
  *  object is to be extracted
  * @param {number} index The index of the requested viewport
  * @returns {Object} A layout object representing the requested viewport
  */
-function getViewport(givenLayout, index) {
-  const offsetList = getViewportOffsetList(givenLayout, index);
+function getViewport(layout, index) {
+  const offsetList = getViewportOffsetList(layout, index);
   if (offsetList) {
     return createLayout(offsetList);
   }
@@ -219,15 +220,18 @@ function getViewport(givenLayout, index) {
 /**
  * Build a new (sub-)layout object based on a list of viewport indexes contained
  * within the source layout object
- * @param {Object} givenLayout The source layout object which contains the
+ * @param {Object} layout The source layout object which contains the
  *  requested viewports
  * @param {Array} indexList A list of viewport indexes that will be part of the
  *  returned layout object (the viewport group)
  * @returns {Object} The new layout object containing the specified viewports
  */
-function createVewportGroup(givenLayout, indexList) {
-  const layout = ensureLayout(givenLayout, true);
-  if (layout && Array.isArray(indexList) && indexList.length > 0) {
+function createVewportGroup(layout, indexList) {
+  if (
+    isValidLayout(layout) &&
+    Array.isArray(indexList) &&
+    indexList.length > 0
+  ) {
     const offsetList = [];
     const { length } = indexList;
     let i = 0;
@@ -307,7 +311,7 @@ export {
   isValidOffsetList,
   offsetListEquals,
   createLayout,
-  ensureLayout,
+  isValidLayout,
   getStandardGridLayout,
   getViewportOffsetList,
   getViewport,

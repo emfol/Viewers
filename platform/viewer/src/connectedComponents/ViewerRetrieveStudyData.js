@@ -123,7 +123,7 @@ const _addSeriesToStudy = (studyMetadata, series) => {
     false
   );
   study.displaySets = studyMetadata.getDisplaySets();
-  _updateMetaDataManager(study, series.seriesInstanceUid);
+  _updateMetaDataManager(study, studyMetadata, series.seriesInstanceUid);
 };
 
 const _updateMetaDataManager = (study, studyMetadata, series) => {
@@ -175,6 +175,7 @@ function ViewerRetrieveStudyData({
   studyInstanceUids,
   seriesInstanceUids,
   clearViewportSpecificData,
+  options,
 }) {
   // hooks
   const [error, setError] = useState(false);
@@ -351,6 +352,7 @@ function ViewerRetrieveStudyData({
       studies={studies}
       isStudyLoaded={isStudyLoaded}
       studyInstanceUids={studyInstanceUids}
+      options={options}
     />
   );
 }
@@ -359,6 +361,7 @@ ViewerRetrieveStudyData.propTypes = {
   studyInstanceUids: PropTypes.array.isRequired,
   seriesInstanceUids: PropTypes.array,
   server: PropTypes.object,
+  options: PropTypes.object,
   clearViewportSpecificData: PropTypes.func.isRequired,
 };
 

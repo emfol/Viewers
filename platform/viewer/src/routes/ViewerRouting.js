@@ -36,13 +36,12 @@ function ViewerRouting({
   const studyUids = UrlUtil.paramString.parseParam(studyInstanceUids);
   const seriesUids = getSeriesInstanceUIDs(seriesInstanceUids, routeLocation);
 
-  console.log('Oops!', routeOptions);
-
   if (server && studyUids) {
     return (
       <ConnectedViewerRetrieveStudyData
         studyInstanceUids={studyUids}
         seriesInstanceUids={seriesUids}
+        options={routeOptions}
       />
     );
   }
