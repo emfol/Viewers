@@ -105,7 +105,11 @@ const _showUserMessage = (queryParamApplied, message, dialog = {}) => {
     return;
   }
 
-  const { show: showUserMessage = () => {} } = dialog;
+  const {
+    show: showUserMessage = () => {
+      /* No-op */
+    },
+  } = dialog;
   showUserMessage({
     message,
   });
@@ -180,7 +184,6 @@ function ViewerRetrieveStudyData({
   // hooks
   const [error, setError] = useState(false);
   const [studies, setStudies] = useState([]);
-  const [isStudyLoaded, setIsStudyLoaded] = useState(false);
   const snackbarContext = useSnackbarContext();
   const { appConfig = {} } = useContext(AppContext);
   const { filterQueryParam: isFilterStrategy = false } = appConfig;
@@ -220,8 +223,14 @@ function ViewerRetrieveStudyData({
       snackbarContext
     );
 
-    setStudies([...studies, study]);
-    setIsStudyLoaded(true);
+    setStudies(studies => {
+      return studies.map(item => {
+        if (item.study === study) {
+          item.isLoaded = true;
+        }
+        return item;
+      });
+    });
   };
 
   /**
@@ -234,16 +243,14 @@ function ViewerRetrieveStudyData({
     if (Array.isArray(studiesData) && studiesData.length > 0) {
       // Map studies to new format, update metadata manager?
       const studies = studiesData.map(study => {
-        const studyMetadata = new OHIFStudyMetadata(
-          study,
-          study.studyInstanceUid
-        );
+        const { studyInstanceUid } = study;
+        const studyMetadata = new OHIFStudyMetadata(study, studyInstanceUid);
 
         _updateStudyDisplaySets(study, studyMetadata);
         _updateMetaDataManager(study, studyMetadata);
 
         // Attempt to load remaning series if any
-        cancelableSeriesPromises[study.studyInstanceUid] = makeCancelable(
+        cancelableSeriesPromises[studyInstanceUid] = makeCancelable(
           _loadRemainingSeries(studyMetadata)
         )
           .then(result => {
@@ -258,7 +265,11 @@ function ViewerRetrieveStudyData({
             }
           });
 
-        return study;
+        return {
+          isLoaded: false,
+          studyInstanceUid,
+          study,
+        };
       });
 
       setStudies(studies);
@@ -349,8 +360,8 @@ function ViewerRetrieveStudyData({
 
   return (
     <ConnectedViewer
-      studies={studies}
-      isStudyLoaded={isStudyLoaded}
+      studies={studies.map(item => item.study)}
+      isStudyLoaded={studies.length > 0 && studies.every(item => item.isLoaded)}
       studyInstanceUids={studyInstanceUids}
       options={options}
     />

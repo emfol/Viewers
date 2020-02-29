@@ -20,8 +20,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-    setViewportSpecificData: (viewportIndex, data) => {
-      dispatch(setViewportSpecificData(viewportIndex, data));
+    setViewportSpecificData: (viewportIndex, data, options) => {
+      dispatch(setViewportSpecificData(viewportIndex, data, options));
     },
     clearViewportSpecificData: () => {
       dispatch(clearViewportSpecificData());

@@ -1,5 +1,3 @@
-import merge from 'lodash.merge';
-
 import {
   CLEAR_VIEWPORT,
   INIT_VIEWPORTS_LAYOUT,
@@ -92,7 +90,7 @@ const viewports = (state = DEFAULT_STATE, action) => {
         action.viewports
       );
       const data = viewportState.buildViewportDataList(
-        action.viewportSpecificData,
+        copy(action.viewportSpecificData),
         viewportState.getViewportCount(layout)
       );
       return viewportState.createState({
@@ -109,7 +107,7 @@ const viewports = (state = DEFAULT_STATE, action) => {
      * @return {Object} New state.
      */
     case SET_VIEWPORT: {
-      let { viewportIndex, viewportSpecificData } = action;
+      let { viewportIndex, viewportSpecificData, options } = action;
       let { layout, activeViewportIndex, custom } = state;
 
       const data = viewportState.buildViewportDataList(
@@ -117,15 +115,22 @@ const viewports = (state = DEFAULT_STATE, action) => {
         viewportState.getViewportCount(layout)
       );
 
-      // Make sure viewport index is a proper integer
-      viewportIndex = Math.trunc(viewportIndex);
+      options = Object(options);
+      viewportIndex = viewportState.getViewportIndex(
+        layout,
+        Math.trunc(viewportIndex),
+        Math.trunc(options.viewportGroup)
+      );
 
       if (data && viewportIndex >= 0 && viewportIndex < data.length) {
-        data[viewportIndex] = merge(
-          {},
-          data[viewportIndex],
-          viewportSpecificData
-        );
+        let viewportSpecificDataCopy = copy(viewportSpecificData);
+        if (options.merge) {
+          viewportSpecificDataCopy = Object.assign(
+            copy(data[viewportIndex]),
+            viewportSpecificDataCopy
+          );
+        }
+        data[viewportIndex] = viewportSpecificDataCopy;
       }
 
       if (viewportSpecificData && viewportSpecificData.plugin) {
@@ -163,9 +168,7 @@ const viewports = (state = DEFAULT_STATE, action) => {
         activeViewportIndex >= 0 &&
         activeViewportIndex < data.length
       ) {
-        data[activeViewportIndex] = {
-          ...viewportSpecificData,
-        };
+        data[activeViewportIndex] = copy(viewportSpecificData);
       }
 
       if (viewportSpecificData && viewportSpecificData.plugin) {
@@ -229,6 +232,12 @@ const viewports = (state = DEFAULT_STATE, action) => {
 /**
  * Utils
  */
+
+function copy(subject) {
+  if (subject !== undefined) {
+    return JSON.parse(JSON.stringify(subject));
+  }
+}
 
 /**
  * Exports

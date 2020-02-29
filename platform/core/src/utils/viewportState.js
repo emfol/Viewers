@@ -180,6 +180,32 @@ function getViewportCount(layout) {
   return 0;
 }
 
+function getViewportIndex(layout, viewportIndex, groupIndex) {
+  if (isOfType(LAYOUT, layout) && isValidIndex(viewportIndex)) {
+    const layoutViewports = layout.viewports;
+    const layoutViewportsLength = layoutViewports.length;
+    if (
+      isValidIndex(groupIndex) &&
+      Array.isArray(layout.groups) &&
+      groupIndex < layout.groups.length
+    ) {
+      const group = layout.groups[groupIndex];
+      if (viewportIndex < group.viewports.length) {
+        const id = group.viewports[viewportIndex].model.id;
+        for (let i = 0; i < layoutViewportsLength; ++i) {
+          if (layoutViewports[i].model.id === id) {
+            return i;
+          }
+        }
+      }
+    }
+    if (viewportIndex < layoutViewportsLength) {
+      return viewportIndex;
+    }
+  }
+  return 0;
+}
+
 /**
  * Utils
  */
@@ -210,6 +236,10 @@ function getAttributesSource(attributes) {
   };
 }
 
+function isValidIndex(subject) {
+  return Number.isInteger(subject) && subject >= 0;
+}
+
 /**
  * Exports
  */
@@ -223,4 +253,5 @@ export {
   buildViewportDataList,
   buildViewportDataMap,
   getViewportCount,
+  getViewportIndex,
 };

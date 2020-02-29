@@ -28,11 +28,13 @@ import {
  */
 export const setViewportSpecificData = (
   viewportIndex,
-  viewportSpecificData
+  viewportSpecificData,
+  options
 ) => ({
   type: SET_VIEWPORT,
   viewportIndex,
   viewportSpecificData,
+  options,
 });
 
 export const setViewportActive = viewportIndex => ({
