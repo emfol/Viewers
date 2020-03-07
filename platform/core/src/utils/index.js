@@ -11,6 +11,8 @@ import b64toBlob from './b64toBlob.js';
 import * as urlUtil from './urlUtil';
 import makeCancelable from './makeCancelable';
 import hotkeys from './hotkeys';
+import isDicomUid from './isDicomUid';
+import resolveObjectPath from './resolveObjectPath';
 import * as viewportLayoutUtils from './viewportLayoutUtils';
 
 const utils = {
@@ -27,6 +29,8 @@ const utils = {
   urlUtil,
   makeCancelable,
   hotkeys,
+  isDicomUid,
+  resolveObjectPath,
   viewportLayoutUtils,
 };
 
@@ -44,6 +48,9 @@ export {
   urlUtil,
   makeCancelable,
   hotkeys,
+  isDicomUid,
+  resolveObjectPath,
+  viewportLayoutUtils,
 };
 
 export default utils;
