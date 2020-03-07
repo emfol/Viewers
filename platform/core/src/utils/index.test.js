@@ -17,6 +17,9 @@ describe('Top level exports', () => {
       'urlUtil',
       'makeCancelable',
       'hotkeys',
+      'isDicomUid',
+      'resolveObjectPath',
+      'hierarchicalListUtils',
     ].sort();
 
     const exports = Object.keys(utils.default).sort();

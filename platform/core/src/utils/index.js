@@ -12,6 +12,9 @@ import loadAndCacheDerivedDisplaySets from './loadAndCacheDerivedDisplaySets.js'
 import * as urlUtil from './urlUtil';
 import makeCancelable from './makeCancelable';
 import hotkeys from './hotkeys';
+import isDicomUid from './isDicomUid';
+import resolveObjectPath from './resolveObjectPath';
+import * as hierarchicalListUtils from './hierarchicalListUtils';
 
 const utils = {
   guid,
@@ -28,6 +31,9 @@ const utils = {
   loadAndCacheDerivedDisplaySets,
   makeCancelable,
   hotkeys,
+  isDicomUid,
+  resolveObjectPath,
+  hierarchicalListUtils,
 };
 
 export {
@@ -45,6 +51,9 @@ export {
   loadAndCacheDerivedDisplaySets,
   makeCancelable,
   hotkeys,
+  isDicomUid,
+  resolveObjectPath,
+  hierarchicalListUtils,
 };
 
 export default utils;

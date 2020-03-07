@@ -115,6 +115,11 @@ window.config = {
       label: 'W/L Preset 9',
       keys: ['9'],
     },
+    {
+      commandName: 'downloadAndZipSeriesOnActiveViewport',
+      label: 'Download and Zip Series On Active Viewport',
+      keys: ['d'],
+    },
   ],
   cornerstoneExtensionConfig: {},
 };
