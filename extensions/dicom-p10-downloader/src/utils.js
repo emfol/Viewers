@@ -2,7 +2,7 @@ import OHIF from '@ohif/core';
 import { api } from 'dicomweb-client';
 
 const {
-  utils: { isDicomUid, resolveObjectPath },
+  utils: { isDicomUid, resolveObjectPath, hierarchicalListUtils },
   DICOMWeb,
 } = OHIF;
 
@@ -44,14 +44,17 @@ function getDicomWebClientFromContext(context, store) {
 
 function getSOPInstanceReference(viewports, index) {
   if (index >= 0) {
-    const { studyInstanceUid, seriesInstanceUid, sopInstanceUid } = Object(
+    const { StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID } = Object(
       resolveObjectPath(viewports, `viewportSpecificData.${index}`)
     );
-    return Object.freeze({
-      studyInstanceUID: validDicomUid(studyInstanceUid),
-      seriesInstanceUID: validDicomUid(seriesInstanceUid),
-      sopInstanceUID: validDicomUid(sopInstanceUid),
-    });
+    return Object.freeze(
+      hierarchicalListUtils.addToList(
+        [],
+        validDicomUid(StudyInstanceUID),
+        validDicomUid(SeriesInstanceUID),
+        validDicomUid(SOPInstanceUID)
+      )
+    );
   }
 }
 
@@ -63,6 +66,7 @@ function getSOPInstanceReferenceFromActiveViewport(viewports) {
 }
 
 export {
+  validDicomUid,
   getDicomWebClientFromConfig,
   getDicomWebClientFromContext,
   getSOPInstanceReferenceFromActiveViewport,

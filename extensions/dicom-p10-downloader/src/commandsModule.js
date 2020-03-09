@@ -6,17 +6,12 @@ import downloadAndZip from './downloadAndZip';
 
 export function getCommands(context) {
   const actions = {
-    downloadAndZipSeriesOnActiveViewport({ servers, viewports }) {
+    downloadAndZipSeriesOnActiveViewport({ servers, viewports, progress }) {
       const dicomWebClient = getDicomWebClientFromContext(context, servers);
       if (dicomWebClient) {
         const reference = getSOPInstanceReferenceFromActiveViewport(viewports);
         if (reference) {
-          downloadAndZip(
-            dicomWebClient,
-            reference.studyInstanceUID,
-            reference.seriesInstanceUID,
-            reference.sopInstanceUID
-          );
+          downloadAndZip(dicomWebClient, reference, progress);
         }
       }
     },
@@ -26,6 +21,11 @@ export function getCommands(context) {
     downloadAndZipSeriesOnActiveViewport: {
       commandFn: actions.downloadAndZipSeriesOnActiveViewport,
       storeContexts: ['servers', 'viewports'],
+      options: {
+        progress(descriptor) {
+          console.log('Progress:', descriptor.percent);
+        },
+      },
     },
   };
 

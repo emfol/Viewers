@@ -16,6 +16,9 @@ describe('Top level exports', () => {
       'urlUtil',
       'makeCancelable',
       'hotkeys',
+      'isDicomUid',
+      'resolveObjectPath',
+      'hierarchicalListUtils',
       'viewportLayoutUtils',
     ].sort();
 

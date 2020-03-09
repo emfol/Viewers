@@ -13,6 +13,7 @@ import makeCancelable from './makeCancelable';
 import hotkeys from './hotkeys';
 import isDicomUid from './isDicomUid';
 import resolveObjectPath from './resolveObjectPath';
+import * as hierarchicalListUtils from './hierarchicalListUtils';
 import * as viewportLayoutUtils from './viewportLayoutUtils';
 
 const utils = {
@@ -31,6 +32,7 @@ const utils = {
   hotkeys,
   isDicomUid,
   resolveObjectPath,
+  hierarchicalListUtils,
   viewportLayoutUtils,
 };
 
@@ -50,6 +52,7 @@ export {
   hotkeys,
   isDicomUid,
   resolveObjectPath,
+  hierarchicalListUtils,
   viewportLayoutUtils,
 };
 

@@ -41,7 +41,7 @@ const ROUTES_DEF = {
       component: ViewerRouting,
     },
     longitudinalViewer: {
-      path: '/longitudinal-viewer/:studyInstanceUids',
+      path: '/longitudinal-viewer/:studyInstanceUIDs',
       options: {
         layout: {
           model: ViewportLayoutUtils.getStandardGridLayout(2, 2),
