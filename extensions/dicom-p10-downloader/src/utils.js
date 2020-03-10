@@ -24,7 +24,7 @@ function getDicomWebClientFromConfig(config) {
   if (Array.isArray(servers) && servers.length > 0) {
     const server = servers[0];
     return new api.DICOMwebClient({
-      url: server.wadoUriRoot,
+      url: server.wadoRoot,
       headers: DICOMWeb.getAuthorizationHeader(server),
     });
   }
@@ -34,7 +34,7 @@ function getDicomWebClientFromContext(context, store) {
   const activeServer = getActiveServerFromServersStore(store);
   if (activeServer) {
     return new api.DICOMwebClient({
-      url: activeServer.wadoUriRoot,
+      url: activeServer.wadoRoot,
       headers: DICOMWeb.getAuthorizationHeader(activeServer),
     });
   } else if (context.dicomWebClient instanceof api.DICOMwebClient) {

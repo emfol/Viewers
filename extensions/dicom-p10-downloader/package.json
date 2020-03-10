@@ -32,7 +32,8 @@
     "dicomweb-client": "^0.5.2"
   },
   "dependencies": {
-    "@babel/runtime": "^7.5.5"
+    "@babel/runtime": "^7.5.5",
+    "jszip": "^3.2.2"
   },
   "gitHead": "a5baa9228c0eda0df880136bde4420d78e6f8706"
 }

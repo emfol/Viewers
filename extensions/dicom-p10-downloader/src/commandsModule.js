@@ -11,7 +11,17 @@ export function getCommands(context) {
       if (dicomWebClient) {
         const reference = getSOPInstanceReferenceFromActiveViewport(viewports);
         if (reference) {
-          downloadAndZip(dicomWebClient, reference, progress);
+          downloadAndZip(dicomWebClient, reference, progress)
+            .then(url => {
+              console.info('Zip file successfully created:', url);
+              location.href = url;
+            })
+            .catch(error => {
+              console.error(
+                'Failed to create Zip file with downloaded instances',
+                error
+              );
+            });
         }
       }
     },
