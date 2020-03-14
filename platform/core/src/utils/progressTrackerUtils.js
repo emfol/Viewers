@@ -1,76 +1,131 @@
-const IS_TASK = Symbol('isTask');
-const IS_LIST = Symbol('isList');
+/**
+ * Constants
+ */
+
+const TYPE = Symbol('Type');
+const TASK = Symbol('Task');
+const LIST = Symbol('List');
+
+/**
+ * Public Methods
+ */
 
 function createTask() {
-  const task = {
-    finished: false,
-    failed: false,
+  return objectWithType(TASK, {
     next: null,
-    waitingOn: null,
-  };
-  return Object.seal(Object.defineProperty(task, IS_TASK, { value: true }));
+    failed: false,
+    finished: false,
+    awaiting: null,
+  });
 }
 
 function createList() {
-  const list = {
-    head: createTask(),
+  return objectWithType(LIST, {
+    head: null,
     observers: [],
-  };
-  return Object.freeze(Object.defineProperty(list, IS_LIST, { value: true }));
+  });
+}
+
+function increaseList(list) {
+  if (isList(list)) {
+    const task = createTask();
+    if (isTask(list.head)) {
+      task.next = list.head;
+    }
+    list.head = task;
+    return task;
+  }
+  return null;
 }
 
 function isTask(subject) {
-  return (
-    subject !== null && typeof subject === 'object' && subject[IS_TASK] === true
-  );
+  return isOfType(TASK, subject);
 }
 
 function isList(subject) {
-  return (
-    subject !== null && typeof subject === 'object' && subject[IS_LIST] === true
-  );
-}
-
-function addObserver(list, observer) {
-  if (isList(list) && typeof observer === 'function') {
-    list.observers.push(observer);
-  }
+  return isOfType(LIST, subject);
 }
 
 function progress(list) {
-  const status = {
-    total: 0,
-    finished: 0,
-    failures: 0,
-    ratio: 0.0,
-  };
+  const status = createStatus();
   if (isList(list) && isTask(list.head)) {
     let item = list.head;
     do {
       ++status.total;
-      if (item.finished) ++status.finished;
-      if (item.failed) ++status.failed;
+      if (item.finished) {
+        ++status.finished;
+        if (item.failed) ++status.failed;
+      }
       item = item.next;
     } while (isTask(item));
   }
   if (status.total > 0) {
     status.ratio = status.finished / status.total;
   }
-  Object.freeze(status);
-  notify(list, status);
-  return status;
+  return Object.freeze(status);
 }
 
-function notify(list, status) {
+function waitOn(list, thenable) {
+  const task = increaseList(list);
+  if (isTask(task)) {
+    const finish = function finish() {
+      task.finished = true;
+      task.awaiting = null;
+      Object.freeze(task);
+      notify(list, progress(list));
+    };
+    task.awaiting = Promise.resolve(thenable).then(finish, function() {
+      task.failed = true;
+      finish();
+    });
+    return true;
+  }
+  return false;
+}
+
+function addObserver(list, observer) {
+  if (
+    isList(list) &&
+    Array.isArray(list.observer) &&
+    typeof observer === 'function'
+  ) {
+    list.observers.push(observer);
+  }
+}
+
+/**
+ * Utils
+ */
+
+function createStatus() {
+  return Object.seal({
+    total: 0,
+    finished: 0,
+    failures: 0,
+    ratio: 0.0,
+  });
+}
+
+function objectWithType(type, object) {
+  return Object.seal(Object.defineProperty(object, TYPE, { value: type }));
+}
+
+function isOfType(type, subject) {
+  return (
+    subject !== null && typeof subject === 'object' && subject[TYPE] === type
+  );
+}
+
+function notify(list, data) {
   if (
     isList(list) &&
     Array.isArray(list.observers) &&
     list.observers.length > 0
   ) {
-    list.observers.slice().forEach(observer => {
+    list.observers.slice().forEach(function(observer) {
       if (typeof observer === 'function') {
         try {
-          observer(status, list);
+          observer(data, list);
         } catch (e) {
           /* Oops! */
         }
@@ -79,64 +134,17 @@ function notify(list, status) {
   }
 }
 
-function appendToList(list, task) {
-  if (isList(list)) {
-    return append(list.head, task);
-  }
-  return false;
-}
-
-function insert(head, task) {
-  if (isTask(head) && isTask(task)) {
-    if (isTask(head.next)) {
-      task.next = head.next;
-    }
-    head.next = task;
-    return true;
-  }
-  return false;
-}
-
-function append(head, task) {
-  if (isTask(head) && isTask(task)) {
-    let last = head;
-    while (isTask(last.next)) {
-      last = last.next;
-    }
-    last.next = task;
-    return true;
-  }
-  return false;
-}
-
-function waitOn(task, thenable) {
-  const promise = Promise.resolve(thenable);
-  if (!task.finished && task.waitingOn === null) {
-    const finish = function finish() {
-      task.finished = true;
-      task.waitingOn = null;
-      if (isList(task.list)) {
-        task.list.update();
-      }
-    };
-    task.waitingOn = promise.then(finish, function() {
-      task.failed = true;
-      finish();
-    });
-  }
-  return promise;
-}
+/**
+ * Exports
+ */
 
 export {
   createTask,
   createList,
+  increaseList,
   isTask,
   isList,
-  addObserver,
   progress,
-  notify,
-  appendToList,
-  insert,
-  append,
   waitOn,
+  addObserver,
 };
