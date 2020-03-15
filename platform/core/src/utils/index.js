@@ -15,6 +15,7 @@ import hotkeys from './hotkeys';
 import isDicomUid from './isDicomUid';
 import resolveObjectPath from './resolveObjectPath';
 import * as hierarchicalListUtils from './hierarchicalListUtils';
+import * as progressTrackingUtils from './progressTrackingUtils';
 
 const utils = {
   guid,
@@ -34,6 +35,7 @@ const utils = {
   isDicomUid,
   resolveObjectPath,
   hierarchicalListUtils,
+  progressTrackingUtils,
 };
 
 export {
@@ -54,6 +56,7 @@ export {
   isDicomUid,
   resolveObjectPath,
   hierarchicalListUtils,
+  progressTrackingUtils,
 };
 
 export default utils;
