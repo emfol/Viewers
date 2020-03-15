@@ -10,16 +10,6 @@ const LIST = Symbol('List');
  * Public Methods
  */
 
-function createTask() {
-  return objectWithType(TASK, {
-    next: null,
-    list: null,
-    failed: false,
-    awaiting: null,
-    progress: 0.0,
-  });
-}
-
 function createList() {
   return objectWithType(LIST, {
     head: null,
@@ -27,35 +17,40 @@ function createList() {
   });
 }
 
-function increaseList(list) {
-  if (isList(list)) {
-    const task = createTask();
-    task.list = list;
-    if (isTask(list.head)) {
-      task.next = list.head;
-    }
-    list.head = task;
-    return task;
-  }
-  return null;
+function isList(subject) {
+  return isOfType(LIST, subject);
+}
+
+function createTask(list, next) {
+  return objectWithType(TASK, {
+    list: isList(list) ? list : null,
+    next: isTask(next) ? next : null,
+    failed: false,
+    awaiting: null,
+    progress: 0.0,
+  });
 }
 
 function isTask(subject) {
   return isOfType(TASK, subject);
 }
 
-function isList(subject) {
-  return isOfType(LIST, subject);
+function increaseList(list) {
+  if (isList(list)) {
+    const task = createTask(list, list.head);
+    list.head = task;
+    notify(list, getOverallProgress(list));
+    return task;
+  }
+  return null;
 }
 
 function update(task, value) {
   if (isTask(task) && isValidProgress(value) && value < 1.0) {
-    const { progress } = task;
-    if (value !== progress) {
-      const { list } = task;
+    if (task.progress !== value) {
       task.progress = value;
-      if (isList(list)) {
-        notify(list, getOverallProgress(list));
+      if (isList(task.list)) {
+        notify(task.list, getOverallProgress(task.list));
       }
     }
   }
@@ -63,29 +58,27 @@ function update(task, value) {
 
 function finish(task) {
   if (isTask(task)) {
-    const { list } = task;
     task.progress = 1.0;
     task.awaiting = null;
     Object.freeze(task);
-    if (isList(list)) {
-      notify(list, getOverallProgress(list));
+    if (isList(task.list)) {
+      notify(task.list, getOverallProgress(task.list));
     }
   }
 }
 
 function getOverallProgress(list) {
   const status = createStatus();
-  if (isList(list) && isTask(list.head)) {
-    let item = list.head;
-    do {
-      const { progress } = item;
+  if (isList(list)) {
+    let task = list.head;
+    while (isTask(task)) {
       status.total++;
-      if (isValidProgress(progress)) {
-        status.partial += progress;
-        if (progress === 1.0 && item.failed) status.failures++;
+      if (isValidProgress(task.progress)) {
+        status.partial += task.progress;
+        if (task.progress === 1.0 && task.failed) status.failures++;
       }
-      item = item.next;
-    } while (isTask(item));
+      task = task.next;
+    }
   }
   if (status.total > 0) {
     status.progress = status.partial / status.total;
@@ -105,9 +98,7 @@ function waitOn(list, thenable) {
         finish(task);
       }
     );
-    return function setProgress(value) {
-      update(task, value);
-    };
+    return task;
   }
   return null;
 }
@@ -115,7 +106,7 @@ function waitOn(list, thenable) {
 function addObserver(list, observer) {
   if (
     isList(list) &&
-    Array.isArray(list.observer) &&
+    Array.isArray(list.observers) &&
     typeof observer === 'function'
   ) {
     list.observers.push(observer);
@@ -172,11 +163,11 @@ function notify(list, data) {
  */
 
 export {
-  createTask,
   createList,
-  increaseList,
-  isTask,
   isList,
+  createTask,
+  isTask,
+  increaseList,
   update,
   finish,
   getOverallProgress,
