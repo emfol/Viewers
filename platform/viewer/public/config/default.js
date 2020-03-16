@@ -116,8 +116,8 @@ window.config = {
       keys: ['9'],
     },
     {
-      commandName: 'downloadAndZipSeriesOnActiveViewport',
-      label: 'Download and Zip Series On Active Viewport',
+      commandName: 'downloadAndZipSeriesOnViewports',
+      label: 'Download and Zip Series On Viewports',
       keys: ['d'],
     },
   ],

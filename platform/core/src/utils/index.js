@@ -10,6 +10,7 @@ import DicomLoaderService from './dicomLoaderService.js';
 import b64toBlob from './b64toBlob.js';
 import loadAndCacheDerivedDisplaySets from './loadAndCacheDerivedDisplaySets.js';
 import * as urlUtil from './urlUtil';
+import makeDeferred from './makeDeferred';
 import makeCancelable from './makeCancelable';
 import hotkeys from './hotkeys';
 import isDicomUid from './isDicomUid';
@@ -30,6 +31,7 @@ const utils = {
   DicomLoaderService,
   urlUtil,
   loadAndCacheDerivedDisplaySets,
+  makeDeferred,
   makeCancelable,
   hotkeys,
   isDicomUid,
@@ -51,6 +53,7 @@ export {
   DicomLoaderService,
   urlUtil,
   loadAndCacheDerivedDisplaySets,
+  makeDeferred,
   makeCancelable,
   hotkeys,
   isDicomUid,

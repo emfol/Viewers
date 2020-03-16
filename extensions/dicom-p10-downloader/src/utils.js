@@ -66,6 +66,26 @@ function getSOPInstanceReferenceFromActiveViewport(viewports) {
   );
 }
 
+function getSOPInstanceReferencesFromViewports(viewports) {
+  const list = [];
+  const viewportSpecificData = resolveObjectPath(
+    viewports,
+    'viewportSpecificData'
+  );
+  Object.keys(viewportSpecificData).forEach(index => {
+    const { StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID } = Object(
+      viewportSpecificData[index]
+    );
+    hierarchicalListUtils.addToList(
+      list,
+      validDicomUid(StudyInstanceUID),
+      validDicomUid(SeriesInstanceUID),
+      validDicomUid(SOPInstanceUID)
+    );
+  });
+  return list;
+}
+
 function save(thenable, listOfUIDs) {
   return thenable
     .then(url => {
@@ -86,4 +106,5 @@ export {
   getDicomWebClientFromConfig,
   getDicomWebClientFromContext,
   getSOPInstanceReferenceFromActiveViewport,
+  getSOPInstanceReferencesFromViewports,
 };

@@ -8,7 +8,11 @@ import JSZip from 'jszip';
  */
 
 const {
-  utils: { isDicomUid, hierarchicalListUtils },
+  utils: {
+    isDicomUid,
+    hierarchicalListUtils,
+    progressTrackingUtils: progressUtils,
+  },
 } = OHIF;
 
 /**
@@ -63,6 +67,8 @@ const {
  *      ]]
  *    ]
  *
+ * Please refer to hierarchicalListUtils.js for more information and utilities;
+ *
  * @param {Object} options A plain object with options;
  * @param {function} options.progress A callback to retrieve notifications
  * @returns {Promise} A promise that resolves to an URL from which the ZIP file
@@ -71,8 +77,18 @@ const {
 
 async function downloadAndZip(dicomWebClient, listOfUIDs, options) {
   if (dicomWebClient instanceof api.DICOMwebClient) {
-    const buffers = await downloadAll(dicomWebClient, listOfUIDs, options);
-    return zipAll(buffers, options);
+    const settings = buildSettings(listOfUIDs, options);
+    const { compression } = settings.tasks;
+    // Register user-provided progress handler as a task list observer
+    progressUtils.addObserver(settings.taskList, settings.options.progress);
+    const buffers = await downloadAll(dicomWebClient, settings).catch(error => {
+      // Reject promise from compression task on download failure
+      compression.deferred.reject(error);
+      throw error;
+    });
+    compression.deferred.resolve(zipAll(buffers, settings));
+    const url = await compression.deferred.promise;
+    return url;
   }
   throw new Error('A valid DICOM Web Client instance is expected');
 }
@@ -81,14 +97,49 @@ async function downloadAndZip(dicomWebClient, listOfUIDs, options) {
  * Utils
  */
 
-async function zipAll(buffers) {
+async function zipAll(buffers, settings) {
   const zip = new JSZip();
   OHIF.log.info('Adding DICOM P10 files to archive:', buffers.length);
   buffers.forEach((buffer, i) => {
     const path = buildPath(buffer) || `${i}.dcm`;
     zip.file(path, buffer);
   });
-  return URL.createObjectURL(await zip.generateAsync({ type: 'blob' }));
+  // Set compression task progress to 50%
+  progressUtils.update(settings.tasks.compression.task, 0.5);
+  const blob = await zip.generateAsync({ type: 'blob' });
+  return URL.createObjectURL(blob);
+}
+
+function buildSettings(listOfUIDs, options) {
+  const taskList = progressUtils.createList();
+  const compression = progressUtils.addDeferred(taskList);
+  const downloads = [];
+
+  // Build downloads list
+  hierarchicalListUtils.forEach(
+    listOfUIDs,
+    (StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID) => {
+      if (isDicomUid(StudyInstanceUID)) {
+        downloads.push({
+          tracking: progressUtils.addDeferred(taskList),
+          parameters: [StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID],
+        });
+      }
+    }
+  );
+
+  // Print tree of hierarchical references
+  OHIF.log.info('Downloading DICOM P10 files for references:');
+  OHIF.log.info(hierarchicalListUtils.print(listOfUIDs));
+
+  return {
+    options: Object(options),
+    taskList,
+    tasks: {
+      downloads,
+      compression,
+    },
+  };
 }
 
 function buildPath(buffer) {
@@ -111,37 +162,25 @@ function buildPath(buffer) {
   return path;
 }
 
-async function downloadAll(dicomWebClient, listOfUIDs, options) {
-  const downloads = [];
-
-  // Initiate download for each item of the hierarchical list
-  hierarchicalListUtils.forEach(
-    listOfUIDs,
-    (StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID) => {
-      if (isDicomUid(StudyInstanceUID)) {
-        downloads.push(
-          download(
-            dicomWebClient,
-            StudyInstanceUID,
-            SeriesInstanceUID,
-            SOPInstanceUID
-          )
-        );
-      }
-    }
-  );
+async function downloadAll(dicomWebClient, settings) {
+  const { downloads } = settings.tasks;
 
   // Make sure at least one download was initiated
   if (downloads.length < 1) {
     throw new Error('No valid reference to be downloaded');
   }
 
-  // Print tree of hierarchical references
-  OHIF.log.info('Downloading DICOM P10 files for references:');
-  OHIF.log.info(hierarchicalListUtils.print(listOfUIDs));
+  const promises = downloads.map(item => {
+    const {
+      parameters,
+      tracking: { deferred, task },
+    } = item;
+    deferred.resolve(download(task, dicomWebClient, ...parameters));
+    return deferred.promise;
+  });
 
   // Wait on created download promises
-  return Promise.all(downloads).then(results => {
+  return Promise.all(promises).then(results => {
     const buffers = [];
     // The "results" array may directly contain buffers (ArrayBuffer instances)
     // or arrays of buffers, depending on the type of downloads initiated on the
@@ -164,6 +203,7 @@ async function downloadAll(dicomWebClient, listOfUIDs, options) {
 }
 
 async function download(
+  task,
   dicomWebClient,
   studyInstanceUID,
   seriesInstanceUID,
@@ -171,6 +211,8 @@ async function download(
 ) {
   // Strict DICOM-formatted variable names COULDN'T be used here because the
   // DICOM Web client interface expects them in this specific format.
+  // @TODO: Add support for download progress handler which will use the
+  // currently not use "task" param
   if (!isDicomUid(studyInstanceUID)) {
     throw new Error('Download requires at least a "StudyInstanceUID" property');
   }

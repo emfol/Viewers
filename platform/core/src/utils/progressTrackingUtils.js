@@ -1,3 +1,5 @@
+import makeDeferred from './makeDeferred';
+
 /**
  * Constants
  */
@@ -17,6 +19,7 @@ const LIST = Symbol('List');
 function createList() {
   return objectWithType(LIST, {
     head: null,
+    named: Object.create(null),
     observers: [],
   });
 }
@@ -133,7 +136,7 @@ function getOverallProgress(list) {
 }
 
 /**
- * Add a Task instance to the given list that waits on a given "thenable". When
+ * Adds a Task instance to the given list that waits on a given "thenable". When
  * the thenable resolves the "finish" method is called on the newly created
  * instance thus notifying the observers of the list.
  * @param {Object} list The List instance to which the new task will be added
@@ -153,6 +156,62 @@ function waitOn(list, thenable) {
       }
     );
     return task;
+  }
+  return null;
+}
+
+/**
+ * Adds a Task instance to the given list using a deferred (a Promise that can
+ * be externally resolved) notifying the observers of the list.
+ * @param {Object} list The List instance to which the new task will be added
+ * @returns {Object} An object with references to the created deferred and task
+ */
+function addDeferred(list) {
+  const deferred = makeDeferred();
+  const task = waitOn(list, deferred.promise);
+  return Object.freeze({
+    deferred,
+    task,
+  });
+}
+
+/**
+ * Assigns a name to a specific task of the list
+ * @param {Object} list The List instance whose task will be named
+ * @param {Object} task The specified Task instance
+ * @param {string} name The name of the task
+ * @returns {boolean} Returns true on success, false otherwise
+ */
+function setTaskName(list, task, name) {
+  if (
+    contains(list, task) &&
+    list.named !== null &&
+    typeof list.named === 'object' &&
+    typeof name === 'string'
+  ) {
+    list.named[name] = task;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Retrieves a task by name
+ * @param {Object} list The List instance whose task will be retrieved
+ * @param {string} name The name of the task to be retrieved
+ * @returns {Object} The Task instance or null if not found
+ */
+function getTaskByName(list, name) {
+  if (
+    isList(list) &&
+    list.named !== null &&
+    typeof list.named === 'object' &&
+    typeof name === 'string'
+  ) {
+    const task = list.named[name];
+    if (isTask(task)) {
+      return task;
+    }
   }
   return null;
 }
@@ -224,6 +283,19 @@ function isValidProgress(value) {
   return typeof value === 'number' && value >= 0.0 && value <= 1.0;
 }
 
+function contains(list, task) {
+  if (isList(list) && isTask(task)) {
+    let item = list.head;
+    while (isTask(item)) {
+      if (item === task) {
+        return true;
+      }
+      item = item.next;
+    }
+  }
+  return false;
+}
+
 function notify(list, data) {
   if (
     isList(list) &&
@@ -256,6 +328,9 @@ export {
   finish,
   getOverallProgress,
   waitOn,
+  addDeferred,
+  setTaskName,
+  getTaskByName,
   addObserver,
   removeObserver,
 };

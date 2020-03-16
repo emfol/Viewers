@@ -15,6 +15,7 @@ describe('Top level exports', () => {
       'loadAndCacheDerivedDisplaySets',
       'DicomLoaderService',
       'urlUtil',
+      'makeDeferred',
       'makeCancelable',
       'hotkeys',
       'isDicomUid',

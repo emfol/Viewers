@@ -100,11 +100,10 @@ describe('progressTrackingUtils', () => {
 
     it('should support tasks with internal progress updates', () => {
       const { list, observer } = context;
-      let task;
-      const update = jest.fn(p => void utils.update(task, p));
-      const download = fakeRequest(update);
-      const processing = download.then(result => result);
-      task = utils.waitOn(list, download);
+      const download = utils.addDeferred(list);
+      const processing = download.deferred.promise.then(result => result);
+      const update = jest.fn(p => void utils.update(download.task, p));
+      download.deferred.resolve(fakeRequest(update));
       utils.waitOn(list, processing);
       return processing.then(() => {
         expect(update).toBeCalledTimes(4);
@@ -160,6 +159,17 @@ describe('progressTrackingUtils', () => {
           expect(observer).nthCalledWith(i + 1, result, list);
         });
       });
+    });
+  });
+
+  describe('Naming of specific tasks', () => {
+    it('should support naming specific tasks', () => {
+      const list = utils.createList();
+      const tasks = [utils.increaseList(list), utils.increaseList(list)];
+      expect(utils.setTaskName(list, tasks[0], 'firstTask')).toBe(true);
+      expect(utils.setTaskName(list, tasks[1], 'secondTask')).toBe(true);
+      expect(utils.getTaskByName(list, 'secondTask')).toBe(tasks[1]);
+      expect(utils.getTaskByName(list, 'firstTask')).toBe(tasks[0]);
     });
   });
 });
